@@ -104,15 +104,16 @@ class VideoProcessor {
   }
 
   /**
-   * Generate a procedural high-tech demo animation (Radar sweep + Rotating HUD Cube)
-   * Perfect for instant 1-click test without needing external files!
+   * Generate dynamic racing animation using the uploaded Aston Martin F1 car image
+   * Features dynamic tracking camera pan, track speed lines, and live telemetry HUD
    */
   generateDemoAnimation(options = {}) {
     const {
       frameCount = 16,
       width = 128,
       height = 64,
-      isTFT = false
+      isTFT = false,
+      sourceImage = null
     } = options;
 
     this.extractedFrames = [];
@@ -124,78 +125,81 @@ class VideoProcessor {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
 
-      // Background
+      // Clear dark background
       ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, width, height);
 
-      const cx = width / 2;
-      const cy = height / 2;
-      const maxR = Math.min(width, height) * 0.44;
       const progress = f / frameCount;
 
-      if (isTFT) {
-        // High-tech RGB Cyber Ring Animation
-        const hue = Math.floor(progress * 360);
-        ctx.strokeStyle = `hsl(${hue}, 85%, 60%)`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
-        ctx.stroke();
+      if (sourceImage && (sourceImage.naturalWidth || sourceImage.width)) {
+        // Draw the uploaded Aston Martin F1 car with cinematic tracking camera motion
+        const sw = sourceImage.naturalWidth || sourceImage.width;
+        const sh = sourceImage.naturalHeight || sourceImage.height;
 
-        // Inner polygon
-        ctx.fillStyle = `hsl(${(hue + 120) % 360}, 90%, 50%)`;
-        const sides = 5;
-        ctx.beginPath();
-        for (let s = 0; s < sides; s++) {
-          const a = (s * 2 * Math.PI) / sides + progress * Math.PI * 2;
-          const px = cx + Math.cos(a) * (maxR * 0.65);
-          const py = cy + Math.sin(a) * (maxR * 0.65);
-          if (s === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
+        // Cinematic tracking: pan smoothly from front wing to rear wing
+        const cropW = sw * 0.75;
+        const cropH = sh * 0.85;
+        const maxPanX = sw - cropW;
+        const panX = (Math.sin(progress * Math.PI * 2) * 0.5 + 0.5) * maxPanX;
+        const panY = (sh - cropH) * 0.5;
+
+        ctx.drawImage(sourceImage, panX, panY, cropW, cropH, 0, 0, width, height);
+
+        // Subtly darken bottom for telemetry readability
+        const hudGrad = ctx.createLinearGradient(0, height - 16, 0, height);
+        hudGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        hudGrad.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+        ctx.fillStyle = hudGrad;
+        ctx.fillRect(0, height - 16, width, 16);
+
+        // Top telemetry bar
+        const topGrad = ctx.createLinearGradient(0, 0, 0, 12);
+        topGrad.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+        topGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, width, 12);
+
+        // Racing Telemetry HUD
+        const currentSpeed = 312 + Math.floor(Math.sin(progress * Math.PI * 2) * 18);
+        const currentRpm = 11400 + Math.floor(Math.sin(progress * Math.PI * 2) * 850);
+
+        if (isTFT) {
+          // Color TFT Racing Telemetry
+          ctx.fillStyle = '#22c55e'; // Keyvo green
+          ctx.font = 'bold 8px monospace';
+          ctx.fillText(`AMR22`, 4, 9);
+
+          ctx.fillStyle = '#fde047'; // Butter yellow
+          ctx.fillText(`DRS ON`, 42, 9);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(`${currentSpeed} KM/H`, width - 58, 9);
+
+          // Bottom tachometer bar
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(4, height - 6, width - 8, 3);
+          const rpmWidth = Math.floor(((currentRpm - 10000) / 2500) * (width - 8));
+          ctx.fillStyle = currentRpm > 12000 ? '#ef4444' : '#22c55e';
+          ctx.fillRect(4, height - 6, Math.max(2, rpmWidth), 3);
+        } else {
+          // Monochrome OLED Telemetry
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '7px monospace';
+          ctx.fillText(`F1:${currentSpeed}KPH`, 3, 8);
+          ctx.fillText(`F:${f + 1}/${frameCount}`, width - 36, 8);
+
+          // Simple RPM line
+          ctx.strokeStyle = '#ffffff';
+          ctx.strokeRect(3, height - 5, width - 6, 2);
         }
-        ctx.closePath();
-        ctx.fill();
 
-        // High-tech text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`FRAME ${f + 1}/${frameCount}`, cx, cy + maxR + 12);
       } else {
-        // Monochrome OLED Radar / Wireframe Cube
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
-
-        // Outer HUD border
+        // Fallback procedural HUD if image is loading
+        ctx.strokeStyle = isTFT ? '#22c55e' : '#ffffff';
         ctx.strokeRect(2, 2, width - 4, height - 4);
-
-        // Circular radar rings
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxR * 0.5, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Sweeping radar beam
-        const angle = progress * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.cos(angle) * maxR, cy + Math.sin(angle) * maxR);
-        ctx.stroke();
-
-        // Blip targets
-        const b1x = cx + Math.cos(angle - 0.7) * (maxR * 0.7);
-        const b1y = cy + Math.sin(angle - 0.7) * (maxR * 0.7);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(b1x - 1, b1y - 1, 3, 3);
-
-        // Frame counter HUD
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '7px monospace';
-        ctx.fillText(`ESP32 ANIM`, 6, 12);
-        ctx.fillText(`F:${f + 1}/${frameCount}`, width - 36, 12);
+        ctx.font = '9px monospace';
+        ctx.fillText(`ASTON MARTIN F1`, 8, height / 2);
       }
 
       this.extractedFrames.push({

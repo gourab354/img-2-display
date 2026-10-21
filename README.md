@@ -1,5 +1,7 @@
 # Img2Display
 
+**Live Application:** [https://img-2-display.vercel.app/](https://img-2-display.vercel.app/)
+
 Img2Display is a browser-based conversion utility designed for embedded systems and microcontroller development. It converts raster images, animated GIFs, and video clips into hardware-compatible C/C++ byte arrays and complete Arduino/PlatformIO sketches for monochrome OLED and color TFT displays.
 
 ---
@@ -92,12 +94,16 @@ img2display/
 
 ---
 
-## Local Development and Deployment
+## Deployment and Usage
 
-The project requires no external build tools, bundlers, or runtime compilers.
+The application is fully client-side and requires zero server configuration or build pipelines.
 
-### Running Locally
-You can serve the directory using any HTTP server:
+### Live Production Link
+The production application is deployed and available at:
+- **[https://img-2-display.vercel.app/](https://img-2-display.vercel.app/)**
+
+### Local Development
+To run locally, serve the project root with any static web server:
 
 ```bash
 # Python
@@ -107,12 +113,11 @@ python -m http.server 8080
 npx serve .
 ```
 
-Access the application at `http://localhost:8080`.
+Open `http://localhost:8080` in your browser.
 
-### GitHub Pages Deployment
-1. Navigate to repository **Settings** > **Pages**.
-2. Under **Branch**, select `main` and root (`/`).
-3. Save changes. GitHub Pages will host the application directly from the repository root.
+### Hosting on Vercel or GitHub Pages
+- **Vercel**: Link your GitHub repository (`https://github.com/gourab354/img-2-display.git`) to Vercel. Automatic zero-config deployment will build and serve it at `https://img-2-display.vercel.app/`.
+- **GitHub Pages**: Go to **Settings** > **Pages** > **Branch: main (root /)** > Save.
 
 ---
 
