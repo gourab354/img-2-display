@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Img2Display — Microcontroller Image & Video C-Array Studio</title>
+  <meta name="description" content="Convert images and video animations into bug-free C/C++ arrays and ready-to-run Arduino / ESP32 sketches for SSD1306 OLED, ST7789, ST7735, and ILI9341 TFT displays.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+            <circle cx="8" cy="10" r="1.5" fill="currentColor"/>
+            <path d="M12 13l2-2 4 4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Img2Display <span class="badge">PRO Studio</span></span>
+          <span class="brand-sub">ESP32 & Microcontroller Visual Code Generator</span>
+        </div>
+      </div>
+
+      <div class="header-badges">
+        <span class="chip chip-success">
+          <span class="dot"></span> Wokwi & Hardware Ready
+        </span>
+        <span class="chip chip-accent">
+          <span class="dot"></span> Video & GIF Animation Supported
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnQuickDemo" class="btn btn-secondary btn-sm" title="Load sample animation to try instantly">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Try Demo Animation
+        </button>
+        <a href="#wokwiModal" id="btnHelpModal" class="btn btn-ghost btn-sm" title="Help & Hardware connection guide">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Pinout Guide
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-layout">
+      <!-- Left Column: Source Upload, Mode & Settings -->
+      <section class="sidebar-panel">
+        <!-- Media Source Tabs -->
+        <div class="panel-section">
+          <div class="segmented-control" id="sourceTabs">
+            <button class="seg-btn active" data-tab="image">Single Image</button>
+            <button class="seg-btn" data-tab="video">Video / GIF / Frames</button>
+          </div>
+
+          <!-- Dropzone -->
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept="image/*,video/mp4,video/webm,.gif">
+            <div class="dropzone-content">
+              <div class="dropzone-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <p class="dropzone-title">Drag & drop image, GIF or video</p>
+              <p class="dropzone-sub">or <span class="highlight">browse files</span> (PNG, JPG, WebP, GIF, MP4, WebM)</p>
+            </div>
+          </div>
+
+          <!-- Uploaded Media Info Bar -->
+          <div class="media-info-bar hidden" id="mediaInfoBar">
+            <div class="media-thumb-wrap">
+              <canvas id="mediaThumbCanvas" width="48" height="48"></canvas>
+            </div>
+            <div class="media-meta">
+              <div class="media-fname" id="mediaFname">filename.png</div>
+              <div class="media-specs" id="mediaSpecs">0x0 px · Image</div>
+            </div>
+            <button id="btnClearMedia" class="btn-icon" title="Clear media">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video & Animation Settings (Shown when video / GIF is loaded or tab selected) -->
+        <div class="panel-section hidden" id="videoControlsSection">
+          <div class="section-title">
+            <span>Video & Animation Extraction</span>
+            <span class="badge badge-subtle" id="videoDurationBadge">0.0s</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="videoFps">Target Playback FPS</label>
+              <select id="videoFps">
+                <option value="5">5 FPS (Ultra compact)</option>
+                <option value="8">8 FPS (Recommended for OLED)</option>
+                <option value="10" selected>10 FPS (Balanced)</option>
+                <option value="15">15 FPS (Smooth on ESP32)</option>
+                <option value="20">20 FPS (TFT_eSPI DMA)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="maxFrames">Max Frames Limit</label>
+              <select id="maxFrames">
+                <option value="10">10 frames (~1 sec)</option>
+                <option value="20">20 frames (~2 sec)</option>
+                <option value="30" selected>30 frames (~3 sec)</option>
+                <option value="50">50 frames</option>
+                <option value="100">100 frames (ESP32 8MB/16MB)</option>
+                <option value="all">All frames in clip</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="video-trimmer-box" id="videoTrimmerBox">
+            <div class="trimmer-labels">
+              <span>Trim Start: <strong id="trimStartVal">0.0s</strong></span>
+              <span>Trim End: <strong id="trimEndVal">3.0s</strong></span>
+            </div>
+            <div class="range-dual-wrap">
+              <input type="range" id="trimStart" min="0" max="10" step="0.1" value="0">
+              <input type="range" id="trimEnd" min="0" max="10" step="0.1" value="3">
+            </div>
+          </div>
+
+          <button id="btnExtractFrames" class="btn btn-primary btn-block btn-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            Re-Extract Frames
+          </button>
+        </div>
+
+        <!-- Target Hardware & Display Config -->
+        <div class="panel-section">
+          <div class="section-title">Target Microcontroller & Screen</div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="mcuBoard">Microcontroller</label>
+              <select id="mcuBoard">
+                <option value="esp32_devkit" selected>ESP32 DevKit V1 / WROOM (4MB Flash)</option>
+                <option value="esp32_s3">ESP32-S3 DevKitC-1 (8MB/16MB)</option>
+                <option value="esp32_c3">ESP32-C3 DevKitM-1</option>
+                <option value="esp8266">ESP8266 NodeMCU / D1 Mini</option>
+                <option value="rp2040">Raspberry Pi Pico / RP2040</option>
+                <option value="arduino_uno">Arduino Uno / Nano (32KB Flash)</option>
+                <option value="arduino_mega">Arduino Mega 2560</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="displayType">Display Hardware Preset</label>
+              <select id="displayType">
+                <optgroup label="OLED Displays (Monochrome 1-Bit)">
+                  <option value="oled_128x64_i2c" selected>SSD1306 0.96" OLED (128×64) I2C</option>
+                  <option value="oled_128x32_i2c">SSD1306 0.91" OLED (128×32) I2C</option>
+                  <option value="oled_128x64_spi">SSD1306 OLED (128×64) SPI</option>
+                  <option value="sh1106_128x64_i2c">SH1106 1.3" OLED (128×64) I2C</option>
+                </optgroup>
+                <optgroup label="TFT Color Displays (RGB565 16-Bit)">
+                  <option value="st7789_240x240">ST7789 1.3" / 1.54" TFT (240×240) SPI</option>
+                  <option value="st7789_135x240">ST7789 TTGO T-Display (135×240) SPI</option>
+                  <option value="st7789_240x320">ST7789 2.0" / 2.4" TFT (240×320) SPI</option>
+                  <option value="st7735_128x160">ST7735 1.8" TFT (128×160) SPI</option>
+                  <option value="st7735_128x128">ST7735 1.44" TFT (128×128) SPI</option>
+                  <option value="ili9341_240x320">ILI9341 2.4" / 2.8" / 3.2" TFT (240×320) SPI</option>
+                  <option value="gc9a01_240x240">GC9A01 Round 1.28" TFT (240×240) SPI</option>
+                </optgroup>
+                <optgroup label="Custom Sizing">
+                  <option value="custom">Custom Resolution & Color Depth</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
+          <!-- Custom Dimensions & Color Mode (Adaptive) -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="targetWidth">Width (px)</label>
+              <input type="number" id="targetWidth" value="128" min="8" max="800">
+            </div>
+            <div class="form-group">
+              <label for="targetHeight">Height (px)</label>
+              <input type="number" id="targetHeight" value="64" min="8" max="800">
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="colorFormat">Color Format</label>
+              <select id="colorFormat">
+                <option value="mono_1bit" selected>Monochrome 1-Bit (OLED / E-Paper)</option>
+                <option value="rgb565">RGB565 16-Bit (TFT 65K Colors)</option>
+                <option value="grayscale_8bit">Grayscale 8-Bit (256 shades)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="graphicsLibrary">Graphics Library</label>
+              <select id="graphicsLibrary">
+                <option value="adafruit_gfx" selected>Adafruit GFX (Most compatible)</option>
+                <option value="tft_espi">TFT_eSPI (High-Speed DMA for ESP32)</option>
+                <option value="u8g2">U8g2 (Monochrome / OLED)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Pinout Configuration -->
+          <div class="pinout-card">
+            <div class="pinout-header">
+              <span>GPIO Pin Assignment</span>
+              <button id="btnResetPins" class="btn-link">Default Pins</button>
+            </div>
+            <div class="pin-inputs-row" id="pinInputsRow">
+              <!-- Dynamically populated based on I2C vs SPI -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Preprocessing & Tuning -->
+        <div class="panel-section">
+          <div class="section-title">Image Tuning & Formatting</div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="scalingMode">Aspect Ratio & Fit</label>
+              <select id="scalingMode">
+                <option value="contain" selected>Contain (Letterbox - Keep Ratio)</option>
+                <option value="cover">Cover (Center Crop - Fill Screen)</option>
+                <option value="stretch">Stretch (Fit to exact bounds)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="rotationAngle">Rotation</label>
+              <select id="rotationAngle">
+                <option value="0" selected>0° (Default)</option>
+                <option value="90">90° Clockwise</option>
+                <option value="180">180° Inverted</option>
+                <option value="270">270° Counter-Clockwise</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Monochrome specific controls (Dithering & Threshold) -->
+          <div id="monoControlsBox">
+            <div class="form-group">
+              <label for="ditherAlgo">Monochrome Dithering</label>
+              <select id="ditherAlgo">
+                <option value="floyd" selected>Floyd-Steinberg (Crisp & photorealistic)</option>
+                <option value="atkinson">Atkinson (Retro Mac / Sharp details)</option>
+                <option value="bayer">Bayer Matrix (Halftone pattern)</option>
+                <option value="threshold">Simple Threshold (Binary black/white)</option>
+              </select>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-header">
+                <label for="thresholdLevel">B/W Threshold / Brightness</label>
+                <span id="thresholdVal">128</span>
+              </div>
+              <input type="range" id="thresholdLevel" min="1" max="254" value="128">
+            </div>
+          </div>
+
+          <!-- Color specific controls (RGB565) -->
+          <div id="colorControlsBox" class="hidden">
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="rgbDither">Color Dithering (Quality)</label>
+                <select id="rgbDither">
+                  <option value="floyd" selected>Floyd-Steinberg (Smooth gradients & skin)</option>
+                  <option value="none">None (Standard 16-Bit Quantization)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="colorOrder">Color Channel Order</label>
+                <select id="colorOrder">
+                  <option value="rgb" selected>RGB (Standard TFT)</option>
+                  <option value="bgr">BGR (Swap Red & Blue)</option>
+                </select>
+              </div>
+            </div>
+            <div class="checkbox-row" style="margin-top: 0.5rem;">
+              <label class="checkbox-label" title="Only enable for raw byte stream DMA. Leave unchecked for Adafruit_GFX and Wokwi.">
+                <input type="checkbox" id="swapEndian">
+                <span>Swap Byte Order (MSB/LSB) — <em>Leave unchecked for Adafruit_GFX / Wokwi</em></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Common image tweaks -->
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="invertColors">
+              <span>Invert Colors (Negative)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Code Generation Options -->
+        <div class="panel-section">
+          <div class="section-title">C/C++ Code Options</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="arrayVarName">Array Variable Name</label>
+              <input type="text" id="arrayVarName" value="display_bitmap" placeholder="e.g. logo_img">
+            </div>
+            <div class="form-group">
+              <label for="flashStorage">Flash Placement</label>
+              <select id="flashStorage">
+                <option value="progmem" selected>PROGMEM (Flash memory - Recommended)</option>
+                <option value="ram">RAM (No PROGMEM)</option>
+              </select>
+            </div>
+          </div>
+          <div class="checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="includeHelpers" checked>
+              <span>Include complete ready-to-run <code>setup()</code> & <code>loop()</code> sketch</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center & Right: Live Simulator, Frame Reel, Code Editor, Wokwi -->
+      <section class="content-panel">
+        <!-- Live Hardware Simulator Frame -->
+        <div class="simulator-card">
+          <div class="card-toolbar">
+            <div class="toolbar-left">
+              <span class="indicator live"></span>
+              <span class="card-title" id="simTitle">SSD1306 0.96" OLED Simulation</span>
+              <span class="badge" id="simResolutionBadge">128×64 px</span>
+            </div>
+
+            <div class="toolbar-right">
+              <button id="btnZoomToggle" class="btn btn-ghost btn-xs" title="Toggle zoom scale">100% / 200%</button>
+              <button id="btnPlayPause" class="btn btn-secondary btn-xs hidden" title="Play / Pause Animation">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Play
+              </button>
+            </div>
+          </div>
+
+          <!-- Realistic Hardware Bezel -->
+          <div class="simulator-viewport">
+            <div class="hardware-device-frame" id="deviceFrame" data-display-style="oled">
+              <div class="screen-glass" id="screenGlass">
+                <canvas id="displayCanvas" width="128" height="64"></canvas>
+                <div class="scanlines-overlay"></div>
+              </div>
+              <div class="device-label" id="devicePinLabel">I2C: SDA=GPIO21, SCL=GPIO22 • 0x3C</div>
+            </div>
+          </div>
+
+          <!-- Video / Animation Frame Scrubber (Shown if video/GIF) -->
+          <div class="frame-scrubber-wrap hidden" id="frameScrubberWrap">
+            <div class="scrubber-header">
+              <span>Frame Timeline: <strong id="currentFrameNumber">Frame 1</strong> of <span id="totalFramesCount">1</span></span>
+              <div class="scrubber-controls">
+                <button id="btnPrevFrame" class="btn-icon-sm" title="Previous frame">⏮</button>
+                <button id="btnPlayAnimation" class="btn-icon-sm" title="Play">▶</button>
+                <button id="btnNextFrame" class="btn-icon-sm" title="Next frame">⏭</button>
+              </div>
+            </div>
+            <input type="range" id="frameScrubber" min="0" max="0" value="0">
+            <div class="frame-thumbs-reel" id="frameThumbsReel">
+              <!-- Dynamically populated thumbnails -->
+            </div>
+          </div>
+
+          <!-- Hardware Memory Budget Indicator -->
+          <div class="memory-meter-bar">
+            <div class="mem-info-row">
+              <span>Memory Footprint: <strong id="memSizeVal">1.00 KB</strong> (<span id="memPixelsVal">8,192 pixels</span>)</span>
+              <span id="memBudgetStatus" class="chip chip-success">Fits easily in Flash (0.02% of 4MB)</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="memProgressFill" style="width: 2%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Code & Output Card -->
+        <div class="output-card">
+          <div class="output-tabs-header">
+            <div class="output-tabs">
+              <button class="out-tab active" data-view="header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                image_data.h
+              </button>
+              <button class="out-tab" data-view="sketch">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                sketch.ino (Main Sketch)
+              </button>
+              <button class="out-tab" data-view="wokwi">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Wokwi Simulator Config
+              </button>
+            </div>
+
+            <div class="output-actions">
+              <button id="btnCopyCode" class="btn btn-secondary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy Code
+              </button>
+              <button id="btnDownloadCurrent" class="btn btn-secondary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download File
+              </button>
+              <button id="btnDownloadZip" class="btn btn-primary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Download Project ZIP
+              </button>
+            </div>
+          </div>
+
+          <!-- Code View Area -->
+          <div class="code-editor-container">
+            <textarea id="codeOutput" readonly spellcheck="false" placeholder="Loading generator..."></textarea>
+            <div class="code-status-bar">
+              <span id="codeLinesCount">0 lines</span>
+              <span id="codeNotice">Ready to compile with Arduino IDE / PlatformIO / Wokwi</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Pinout & Connection Modal -->
+    <div class="modal-backdrop hidden" id="pinoutModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Microcontroller Wiring & Troubleshooting Guide</h3>
+          <button id="btnCloseModal" class="btn-icon">×</button>
+        </div>
+        <div class="modal-body">
+          <h4>Why did code fail in other tools?</h4>
+          <ul class="guide-list">
+            <li><strong>Adafruit ST7789 requires <code>tft.init(width, height)</code></strong>, NOT <code>tft.begin()</code>. Calling <code>begin()</code> throws compiler error or black screen.</li>
+            <li><strong>Adafruit ST7735 requires <code>tft.initR(INITR_BLACKTAB)</code></strong>.</li>
+            <li><strong>Adafruit SSD1306 requires <code>display.begin(SSD1306_SWITCHCAPVCC, 0x3C)</code></strong> with Wire.</li>
+            <li><strong>RGB565 Endianness (Byte Swap)</strong>: In Adafruit_GFX / Wokwi, <code>drawRGBBitmap()</code> expects natural byte order. If "Swap Byte Order" is enabled, bytes get inverted causing crazy rainbow/solarized colors (red becomes dark blue/purple, white becomes green). <strong>Keep "Swap Byte Order" unchecked for Adafruit_GFX and Wokwi!</strong></li>
+            <li><strong>MISO Pin Function</strong>: <code>MISO</code> (Master In, Slave Out) is only for reading data from display back to ESP32 (e.g. reading touch screen or SD card). It is <strong>never used</strong> for drawing images and has zero effect on image quality. Quality is determined entirely by resolution and RGB565 dithering.</li>
+            <li><strong>RGB vs BGR Panels</strong>: If red and blue colors are swapped on your physical screen, switch the <em>Color Channel Order</em> dropdown to <strong>BGR</strong>.</li>
+
+          <h4>Tested Pinouts</h4>
+          <table class="guide-table">
+            <thead>
+              <tr>
+                <th>Board</th>
+                <th>Display Bus</th>
+                <th>Pins</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>ESP32 DevKit</td>
+                <td>I2C (SSD1306)</td>
+                <td>SDA = GPIO 21, SCL = GPIO 22</td>
+              </tr>
+              <tr>
+                <td>ESP32 DevKit</td>
+                <td>SPI (ST7789/ST7735/ILI9341)</td>
+                <td>MOSI = 23, SCK = 18, CS = 5, DC = 2, RST = 4</td>
+              </tr>
+              <tr>
+                <td>ESP8266 NodeMCU</td>
+                <td>I2C (SSD1306)</td>
+                <td>SDA = D2 (GPIO 4), SCL = D1 (GPIO 5)</td>
+              </tr>
+              <tr>
+                <td>Arduino Uno / Nano</td>
+                <td>I2C (SSD1306)</td>
+                <td>SDA = A4, SCL = A5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-notification" id="toast">Notification message</div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/zipExporter.js"></script>
+  <script src="js/converter.js"></script>
+  <script src="js/videoProcessor.js"></script>
+  <script src="js/codeGenerator.js"></script>
+  <script src="js/wokwiGenerator.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
