@@ -52,9 +52,9 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Demo Video
         </button>
-        <a href="#wokwiModal" id="btnHelpModal" class="btn btn-ghost btn-sm" title="Help & Hardware connection guide">
+        <a href="#wokwiModal" id="btnHelpModal" class="btn btn-ghost btn-sm" title="Help, Arduino IDE & Wokwi setup guide">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Pinout Guide
+          User Guide & Pinouts
         </a>
         <a href="https://github.com/gourab354/img-2-display" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" title="View Source on GitHub">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
@@ -454,18 +454,41 @@
     <div class="modal-backdrop hidden" id="pinoutModal">
       <div class="modal-dialog">
         <div class="modal-header">
-          <h3>Microcontroller Wiring & Troubleshooting Guide</h3>
+          <h3>Img2Display User Guide: Wokwi, Arduino IDE & Wiring</h3>
           <button id="btnCloseModal" class="btn-icon">×</button>
         </div>
         <div class="modal-body">
-          <h4>Why did code fail in other tools?</h4>
-          <ul class="guide-list">
-            <li><strong>Adafruit ST7789 requires <code>tft.init(width, height)</code></strong>, NOT <code>tft.begin()</code>. Calling <code>begin()</code> throws compiler error or black screen.</li>
-            <li><strong>Adafruit ST7735 requires <code>tft.initR(INITR_BLACKTAB)</code></strong>.</li>
-            <li><strong>Adafruit SSD1306 requires <code>display.begin(SSD1306_SWITCHCAPVCC, 0x3C)</code></strong> with Wire.</li>
-            <li><strong>RGB565 Endianness (Byte Swap)</strong>: In Adafruit_GFX / Wokwi, <code>drawRGBBitmap()</code> expects natural byte order. If "Swap Byte Order" is enabled, bytes get inverted causing crazy rainbow/solarized colors (red becomes dark blue/purple, white becomes green). <strong>Keep "Swap Byte Order" unchecked for Adafruit_GFX and Wokwi!</strong></li>
-            <li><strong>MISO Pin Function</strong>: <code>MISO</code> (Master In, Slave Out) is only for reading data from display back to ESP32 (e.g. reading touch screen or SD card). It is <strong>never used</strong> for drawing images and has zero effect on image quality. Quality is determined entirely by resolution and RGB565 dithering.</li>
-            <li><strong>RGB vs BGR Panels</strong>: If red and blue colors are swapped on your physical screen, switch the <em>Color Channel Order</em> dropdown to <strong>BGR</strong>.</li>
+          <div class="guide-card">
+            <h4>⚡ Option 1: Run in Wokwi Simulator (Zero Hardware Required)</h4>
+            <ol class="guide-list-ordered">
+              <li>Open <a href="https://wokwi.com" target="_blank" rel="noopener" style="color:var(--brand-primary); font-weight:600; text-decoration:underline;">wokwi.com</a> and start a new project (Select <strong>ESP32</strong> or <strong>Arduino Uno</strong>).</li>
+              <li>In Wokwi, switch to the <code>diagram.json</code> tab. Copy and paste the entire content from our <strong>Wokwi Simulator Config</strong> tab (or the downloaded <code>diagram.json</code>). This instantly connects the display to the board!</li>
+              <li>In Wokwi's code area, click <code>+</code> (or dropdown arrow) &rarr; <strong>New File</strong>, type <code>image_data.h</code> (exact lowercase), and paste the code from our <strong>image_data.h</strong> tab.</li>
+              <li>In Wokwi's <code>sketch.ino</code> tab, replace the code with our <strong>sketch.ino (Main Sketch)</strong>.</li>
+              <li>In Wokwi's <code>libraries.txt</code> tab, confirm the libraries are present:
+                <br>• For OLED: <code>Adafruit SSD1306</code> &amp; <code>Adafruit GFX Library</code>
+                <br>• For TFT: <code>Adafruit GFX Library</code> &amp; <code>Adafruit ST7735 and ST7789 Library</code> (or <code>Adafruit ILI9341</code>)
+              </li>
+              <li>Click the green <strong>Play (▶)</strong> button to watch your image/animation run!</li>
+            </ol>
+          </div>
+
+          <div class="guide-card">
+            <h4>🔌 Option 2: Upload to Physical Hardware using Arduino IDE</h4>
+            <ol class="guide-list-ordered">
+              <li><strong>Easiest Way:</strong> Click <strong>Download Project ZIP</strong> and extract it. Double-click <code>sketch.ino</code> &mdash; Arduino IDE automatically loads <code>image_data.h</code> in the adjacent tab!</li>
+              <li><strong>Manual Way:</strong> If creating your own sketch, paste <code>sketch.ino</code>, then press <code>Ctrl+Shift+N</code> (or click the tab dropdown &rarr; <strong>New Tab</strong>), name it <code>image_data.h</code>, and paste the byte array code.</li>
+              <li>Open <strong>Tools &rarr; Manage Libraries...</strong> (<code>Ctrl+Shift+I</code>) and install:
+                <br>• <code>Adafruit GFX Library</code>
+                <br>• For OLED: <code>Adafruit SSD1306</code>
+                <br>• For ST7789 / ST7735: <code>Adafruit ST7735 and ST7789 Library</code>
+                <br>• For ILI9341: <code>Adafruit ILI9341</code>
+              </li>
+              <li>Under <strong>Tools &rarr; Board</strong>, choose your microcontroller (e.g. <em>ESP32 Dev Module</em> or <em>Arduino Uno</em>).</li>
+              <li>Under <strong>Tools &rarr; Port</strong>, choose the connected USB COM port.</li>
+              <li>Wire the display according to the pinout below, then click <strong>Upload (➔)</strong> (<code>Ctrl+U</code>)!</li>
+            </ol>
+          </div>
 
           <h4>Tested Pinouts</h4>
           <table class="guide-table">
@@ -499,6 +522,16 @@
               </tr>
             </tbody>
           </table>
+
+          <h4>Why did code fail in other converters? (Gotchas &amp; Fixes)</h4>
+          <ul class="guide-list">
+            <li><strong>Adafruit ST7789 requires <code>tft.init(width, height)</code></strong>, NOT <code>tft.begin()</code>. Calling <code>begin()</code> throws compiler error or black screen.</li>
+            <li><strong>Adafruit ST7735 requires <code>tft.initR(INITR_BLACKTAB)</code></strong>.</li>
+            <li><strong>Adafruit SSD1306 requires <code>display.begin(SSD1306_SWITCHCAPVCC, 0x3C)</code></strong> with Wire.</li>
+            <li><strong>RGB565 Endianness (Byte Swap)</strong>: In Adafruit_GFX / Wokwi, <code>drawRGBBitmap()</code> expects natural byte order. If "Swap Byte Order" is enabled, bytes get inverted causing crazy rainbow/solarized colors. <strong>Keep "Swap Byte Order" unchecked for Adafruit_GFX and Wokwi!</strong></li>
+            <li><strong>MISO Pin Function</strong>: <code>MISO</code> (Master In, Slave Out) is only for reading data from display back to ESP32 (e.g. reading touch screen or SD card). It is <strong>never used</strong> for drawing images. Quality is determined entirely by resolution and RGB565 dithering.</li>
+            <li><strong>RGB vs BGR Panels</strong>: If red and blue colors are swapped on your physical screen, switch the <em>Color Channel Order</em> dropdown to <strong>BGR</strong>.</li>
+          </ul>
         </div>
       </div>
     </div>

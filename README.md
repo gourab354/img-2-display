@@ -44,7 +44,86 @@ Additionally, Img2Display supports multi-frame video extraction, allowing develo
 
 ---
 
-## Supported Hardware
+## 📖 Step-by-Step Guide: How to Use Wokwi & Arduino IDE
+
+Img2Display generates everything needed for both cloud simulation and real hardware upload. Follow these simple steps:
+
+### Option A: Online Simulation in Wokwi (Zero Hardware Required)
+
+You don't need a physical ESP32 or screen to test your animation. Wokwi runs full embedded emulation right inside your web browser.
+
+1. **Open Wokwi**: Go to [https://wokwi.com](https://wokwi.com).
+2. **Start a New Project**:
+   - For ESP32 projects: Select **ESP32** (or ESP32-S3).
+   - For Arduino Uno projects: Select **Arduino Uno**.
+3. **Set Up the Virtual Breadboard & Wiring**:
+   - In Wokwi, switch to the **`diagram.json`** tab.
+   - In Img2Display, click the **Wokwi Simulator Config** tab (or copy `diagram.json` from your downloaded ZIP).
+   - Copy and replace all text in Wokwi's `diagram.json` with the generated configuration. This automatically places and wires your screen to the exact microcontroller pins!
+4. **Add `image_data.h` in Wokwi**:
+   - Notice that `sketch.ino` contains `#include "image_data.h"`. Without this file, compilation will fail with `image_data.h: No such file or directory`.
+   - In Wokwi's editor tab bar (next to `sketch.ino`), click the `+` (or small down-arrow) and click **New File**.
+   - Name the file **`image_data.h`** (exact lowercase name, case-sensitive) and press Enter.
+   - Copy the C-array code from Img2Display's **`image_data.h`** tab and paste it into this newly created file.
+5. **Paste the Arduino Sketch**:
+   - In Wokwi, switch to the **`sketch.ino`** tab.
+   - Copy the code from Img2Display's **`sketch.ino (Main Sketch)`** tab and paste it here.
+6. **Include Libraries**:
+   - Open Wokwi's **`libraries.txt`** tab and add the necessary libraries:
+     - For OLED:
+       ```text
+       Adafruit SSD1306
+       Adafruit GFX Library
+       ```
+     - For ST7789 / ST7735 / ILI9341 TFT:
+       ```text
+       Adafruit GFX Library
+       Adafruit ST7735 and ST7789 Library
+       Adafruit ILI9341
+       ```
+7. **Simulate**: Click the green **Play (▶)** button. Your image or animation will start playing immediately!
+
+---
+
+### Option B: Uploading to Physical Hardware using Arduino IDE
+
+#### How `image_data.h` works in Arduino IDE:
+The sketch links to the array data via `#include "image_data.h"`. For Arduino IDE to compile successfully, `image_data.h` must reside in the **exact same folder** as `sketch.ino`.
+
+You can set it up in either of two easy ways:
+
+- **Method 1 (Recommended - 1-Click ZIP)**:
+  1. Click the green **Download Project ZIP** button in Img2Display.
+  2. Extract the ZIP. It already contains both `sketch.ino` and `image_data.h` together in a folder named `sketch`.
+  3. Double-click `sketch.ino` to open it in Arduino IDE. Both files will appear automatically as side-by-side tabs!
+
+- **Method 2 (Manual Copy/Paste into an Existing Sketch)**:
+  1. Open Arduino IDE and create/open your sketch.
+  2. Paste the code from Img2Display's **`sketch.ino`** tab into the main editor.
+  3. In Arduino IDE, click the tab menu (three vertical dots `⋮` or the small downward arrow on the far right of the tab bar, or press **`Ctrl + Shift + N`**).
+  4. Click **New Tab**, type **`image_data.h`**, and hit Enter.
+  5. Paste the code from Img2Display's **`image_data.h`** tab into this new tab.
+
+#### Uploading to the Board:
+1. **Install Required Libraries**:
+   - Open the Library Manager in Arduino IDE (**Tools** > **Manage Libraries...** or `Ctrl + Shift + I`).
+   - Search for and install:
+     - **Adafruit GFX Library** (Install with all dependencies if prompted).
+     - **For OLED (SSD1306)**: Install **Adafruit SSD1306**.
+     - **For ST7789 / ST7735 TFT**: Install **Adafruit ST7735 and ST7789 Library**.
+     - **For ILI9341 TFT**: Install **Adafruit ILI9341**.
+2. **Connect Microcontroller & Select Port**:
+   - Plug your ESP32 or Arduino board into your PC via a data-capable USB cable.
+   - In Arduino IDE, go to **Tools** > **Board** and pick your board (e.g., *ESP32 Dev Module* or *Arduino Uno*).
+   - Go to **Tools** > **Port** and select the active COM port (e.g., `COM3`, `COM5`).
+3. **Wire the Display**:
+   - Refer to the Pinout Table below and wire your display to the designated pins on your microcontroller.
+4. **Upload the Code**:
+   - Click the **Upload (➔)** button (or press `Ctrl + U`).
+   - If flashing ESP32, hold down the `BOOT` button on the board for a second if the console shows `Connecting........_____.....`.
+   - Once uploading completes, your screen will light up with your image or animation!
+
+---
 
 ### Microcontrollers
 - Espressif ESP32 (DevKit v1, ESP32-S3, ESP32-C3)
