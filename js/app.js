@@ -621,7 +621,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (codeNotice) {
       if (state.currentOutputView === 'wokwi') {
-        codeNotice.textContent = 'Paste directly into Wokwi diagram.json (100% valid JSON, no edits needed)';
+        const isTFT = !displayType.value.startsWith('oled_') && !displayType.value.startsWith('sh1106_');
+        const frameCount = state.processedFramesData.length;
+        if (isTFT && frameCount > 4) {
+          codeNotice.textContent = `Wokwi diagram.json (⚠️ Cloud Compiler Limit: Wokwi rejects uploads >1.5MB with HTML error. For Wokwi test with ≤4 frames; for full ${frameCount} frames compile in Arduino IDE)`;
+        } else {
+          codeNotice.textContent = 'Paste directly into Wokwi diagram.json (100% valid JSON, no edits needed)';
+        }
       } else if (state.currentOutputView === 'sketch') {
         codeNotice.textContent = 'Main sketch: paste into sketch.ino tab';
       } else {
