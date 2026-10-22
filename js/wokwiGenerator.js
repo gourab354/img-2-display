@@ -25,7 +25,7 @@ const WokwiGenerator = {
         author: "Img2Display Pro Studio",
         editor: "wokwi",
         parts: [
-          { type: "board-esp32-devkit-c-v4", id: "esp", top: 0, left: 0, attrs: {} },
+          { type: "board-esp32-devkit-c-v4", id: "esp", top: 0, left: 0, attrs: { flashSize: "16" } },
           { type: "board-ssd1306", id: "oled", top: -80, left: 160, attrs: { i2cAddress: "0x3c" } }
         ],
         connections: [
@@ -39,6 +39,9 @@ const WokwiGenerator = {
       };
     } else if (isESP32 && !isOled) {
       // ESP32 with ILI9341 TFT Display (SPI)
+      // NOTE: Wokwi component is 'wokwi-ili9341' (NOT 'board-ili9341')
+      // Reset pin is 'RST' (NOT 'RESET')
+      // LED pin must be wired to 3V3 for display backlight
       const cs = pins.cs !== undefined ? pins.cs : 5;
       const dc = pins.dc !== undefined ? pins.dc : 2;
       const rst = pins.rst !== undefined ? pins.rst : 4;
@@ -48,16 +51,17 @@ const WokwiGenerator = {
         author: "Img2Display Pro Studio",
         editor: "wokwi",
         parts: [
-          { type: "board-esp32-devkit-c-v4", id: "esp", top: 0, left: 0, attrs: {} },
-          { type: "board-ili9341", id: "tft", top: -120, left: 180, attrs: {} }
+          { type: "board-esp32-devkit-c-v4", id: "esp", top: 0, left: 0, attrs: { flashSize: "16" } },
+          { type: "wokwi-ili9341", id: "tft", top: -120, left: 180, attrs: {} }
         ],
         connections: [
           [ "esp:TX", "$serialMonitor:RX", "", [] ],
           [ "esp:RX", "$serialMonitor:TX", "", [] ],
           [ "esp:GND.1", "tft:GND", "black", [ "v0" ] ],
           [ "esp:3V3", "tft:VCC", "red", [ "v0" ] ],
+          [ "esp:3V3", "tft:LED", "red", [ "v0" ] ],
           [ `esp:${cs}`, "tft:CS", "blue", [ "v0" ] ],
-          [ `esp:${rst}`, "tft:RESET", "orange", [ "v0" ] ],
+          [ `esp:${rst}`, "tft:RST", "orange", [ "v0" ] ],
           [ `esp:${dc}`, "tft:D/C", "green", [ "v0" ] ],
           [ "esp:23", "tft:MOSI", "purple", [ "v0" ] ],
           [ "esp:18", "tft:SCK", "white", [ "v0" ] ]
@@ -81,17 +85,24 @@ const WokwiGenerator = {
         ]
       };
     } else {
-      // Generic fallback
+      // Arduino Uno with ILI9341 TFT Display (SPI)
       diagram = {
         version: 1,
         author: "Img2Display Pro Studio",
         editor: "wokwi",
         parts: [
-          { type: "board-esp32-devkit-c-v4", id: "esp", top: 0, left: 0, attrs: {} }
+          { type: "wokwi-arduino-uno", id: "uno", top: 0, left: 0, attrs: {} },
+          { type: "wokwi-ili9341", id: "tft", top: -120, left: 180, attrs: {} }
         ],
         connections: [
-          [ "esp:TX", "$serialMonitor:RX", "", [] ],
-          [ "esp:RX", "$serialMonitor:TX", "", [] ]
+          [ "uno:GND.1", "tft:GND", "black", [ "v0" ] ],
+          [ "uno:5V", "tft:VCC", "red", [ "v0" ] ],
+          [ "uno:3.3V", "tft:LED", "red", [ "v0" ] ],
+          [ "uno:10", "tft:CS", "blue", [ "v0" ] ],
+          [ "uno:8", "tft:RST", "orange", [ "v0" ] ],
+          [ "uno:9", "tft:D/C", "green", [ "v0" ] ],
+          [ "uno:11", "tft:MOSI", "purple", [ "v0" ] ],
+          [ "uno:13", "tft:SCK", "white", [ "v0" ] ]
         ]
       };
     }
