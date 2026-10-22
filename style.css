@@ -709,6 +709,12 @@ input[type="range"]::-webkit-slider-thumb:hover {
   gap: 0.5rem;
 }
 
+.video-actions-row {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
 /* Content Panel (Right / Center Viewport) */
 .content-panel {
   display: flex;

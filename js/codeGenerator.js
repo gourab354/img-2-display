@@ -145,6 +145,17 @@ const CodeGenerator = {
   },
 
   /**
+   * Generate header code for a single active frame (useful for quick copy of 1 frame from video)
+   */
+  generateSingleFrameHeader(frameData, frameIndex, config) {
+    const singleConfig = {
+      ...config,
+      varName: `${config.varName || 'frame'}_${frameIndex}`
+    };
+    return this.generateHeaderFile([frameData], singleConfig);
+  },
+
+  /**
    * Generate ready-to-run sketch.ino
    */
   generateSketchFile(config) {
@@ -176,6 +187,12 @@ const CodeGenerator = {
     lines.push(` * Display:      ${displayType.toUpperCase()} (${width}x${height} px)`);
     lines.push(` * Library:      ${graphicsLibrary.toUpperCase()}`);
     lines.push(` * Mode:         ${isAnim ? `Animation (${frameCount} frames @ ${fps} FPS)` : 'Static Image'}`);
+    if (isAnim && !isMono && mcuBoard.startsWith('esp32')) {
+      lines.push(' *');
+      lines.push(' * [ESP32 FLASH TIP FOR ANIMATIONS]:');
+      lines.push(' * If compilation reports "Sketch too big" in Arduino IDE, go to:');
+      lines.push(' * Tools -> Partition Scheme -> select "Huge APP (3MB No OTA / 1MB SPIFFS)"');
+    }
     lines.push(' * =====================================================================');
     lines.push(' */');
     lines.push('');
@@ -254,6 +271,7 @@ const CodeGenerator = {
         lines.push('    display.display();');
         lines.push(`    currentFrame = (currentFrame + 1) % ${frameCount};`);
         lines.push('  }');
+        lines.push('  delay(1); // Yield for Watchdog and background tasks');
         lines.push('}');
       }
 
@@ -271,10 +289,11 @@ const CodeGenerator = {
       lines.push(`  tft.setRotation(${Math.round(rotation / 90)});`);
       lines.push('  tft.fillScreen(TFT_BLACK);');
       lines.push('  tft.setSwapBytes(true); // Matches RGB565 endianness');
+      lines.push('  Serial.println(F("TFT_eSPI initialized successfully!"));');
       lines.push('');
 
       if (!isAnim) {
-        lines.push(`  tft.pushImage(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, ${cleanName});`);
+        lines.push(`  tft.pushImage(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, (const uint16_t*)${cleanName});`);
         lines.push('}');
         lines.push('');
         lines.push('void loop() {');
@@ -286,13 +305,19 @@ const CodeGenerator = {
         lines.push('void loop() {');
         lines.push('  static int currentFrame = 0;');
         lines.push('  static unsigned long lastTime = 0;');
-        lines.push(`  const unsigned long frameInterval = ${frameDelayMs};`);
+        lines.push(`  const unsigned long frameInterval = ${frameDelayMs}; // ${fps} FPS`);
         lines.push('');
         lines.push('  if (millis() - lastTime >= frameInterval) {');
         lines.push('    lastTime = millis();');
-        lines.push(`    tft.pushImage(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, ${cleanName}_allArray[currentFrame]);`);
+        lines.push('#if defined(__AVR__)');
+        lines.push(`    const uint16_t* framePtr = (const uint16_t*)pgm_read_ptr(&(${cleanName}_allArray[currentFrame]));`);
+        lines.push('#else');
+        lines.push(`    const uint16_t* framePtr = ${cleanName}_allArray[currentFrame];`);
+        lines.push('#endif');
+        lines.push(`    tft.pushImage(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, framePtr);`);
         lines.push(`    currentFrame = (currentFrame + 1) % ${frameCount};`);
         lines.push('  }');
+        lines.push('  delay(1); // Yield for Watchdog and background tasks');
         lines.push('}');
       }
 
@@ -301,50 +326,75 @@ const CodeGenerator = {
       const cs = pins.cs !== undefined ? pins.cs : 5;
       const dc = pins.dc !== undefined ? pins.dc : 2;
       const rst = pins.rst !== undefined ? pins.rst : 4;
+      const mosi = pins.mosi !== undefined ? pins.mosi : 23;
+      const sck = pins.sck !== undefined ? pins.sck : 18;
 
       lines.push('#include <SPI.h>');
       lines.push('#include <Adafruit_GFX.h>');
+
+      // Pin definitions
+      lines.push('// SPI Pin Assignment');
+      lines.push(`#define TFT_CS   ${cs}`);
+      lines.push(`#define TFT_DC   ${dc}`);
+      lines.push(`#define TFT_RST  ${rst}`);
+      lines.push(`#define TFT_MOSI ${mosi}`);
+      lines.push(`#define TFT_SCK  ${sck}`);
+      lines.push('');
 
       let initCall = '';
       if (displayType.startsWith('st7789')) {
         lines.push('#include <Adafruit_ST7789.h>');
         lines.push('#include "image_data.h"');
         lines.push('');
-        lines.push(`Adafruit_ST7789 tft = Adafruit_ST7789(${cs}, ${dc}, ${rst});`);
-        // Crucial fix: Adafruit_ST7789 requires tft.init(width, height) !
+        // Direct initialization avoids deleted copy constructor error in newer toolchains
+        lines.push('Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);');
         initCall = `tft.init(${width}, ${height});`;
       } else if (displayType.startsWith('st7735')) {
         lines.push('#include <Adafruit_ST7735.h>');
         lines.push('#include "image_data.h"');
         lines.push('');
-        lines.push(`Adafruit_ST7735 tft = Adafruit_ST7735(${cs}, ${dc}, ${rst});`);
-        // Crucial fix: Adafruit_ST7735 requires tft.initR(INITR_BLACKTAB) !
-        initCall = 'tft.initR(INITR_BLACKTAB);';
+        lines.push('Adafruit_ST7735 tft(TFT_CS, TFT_DC, TFT_RST);');
+        if (displayType === 'st7735_128x128') {
+          initCall = 'tft.initR(INITR_144GREENTAB); // 1.44" 128x128';
+        } else {
+          initCall = 'tft.initR(INITR_BLACKTAB); // 1.8" 128x160';
+        }
       } else if (displayType.startsWith('ili9341')) {
         lines.push('#include <Adafruit_ILI9341.h>');
         lines.push('#include "image_data.h"');
         lines.push('');
-        lines.push(`Adafruit_ILI9341 tft = Adafruit_ILI9341(${cs}, ${dc}, ${rst});`);
+        lines.push('Adafruit_ILI9341 tft(TFT_CS, TFT_DC, TFT_RST);');
+        initCall = 'tft.begin();';
+      } else if (displayType.startsWith('gc9a01')) {
+        lines.push('#include <Adafruit_GC9A01A.h>');
+        lines.push('#include "image_data.h"');
+        lines.push('');
+        lines.push('Adafruit_GC9A01A tft(TFT_CS, TFT_DC, TFT_RST);');
         initCall = 'tft.begin();';
       } else {
         lines.push('#include <Adafruit_ST7789.h>');
         lines.push('#include "image_data.h"');
         lines.push('');
-        lines.push(`Adafruit_ST7789 tft = Adafruit_ST7789(${cs}, ${dc}, ${rst});`);
+        lines.push('Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);');
         initCall = `tft.init(${width}, ${height});`;
       }
 
       lines.push('');
       lines.push('void setup() {');
       lines.push('  Serial.begin(115200);');
+      if (mcuBoard.startsWith('esp32')) {
+        lines.push('  // Initialize SPI with designated hardware pins');
+        lines.push('  SPI.begin(TFT_SCK, -1, TFT_MOSI, TFT_CS);');
+      }
       lines.push(`  ${initCall}`);
       lines.push(`  tft.setRotation(${Math.round(rotation / 90)});`);
       lines.push('  tft.fillScreen(0x0000); // Black');
+      lines.push('  Serial.println(F("TFT display initialized successfully!"));');
       lines.push('');
 
       if (!isAnim) {
         lines.push(`  // Draw RGB565 Bitmap`);
-        lines.push(`  tft.drawRGBBitmap(0, 0, ${cleanName}, DISPLAY_WIDTH, DISPLAY_HEIGHT);`);
+        lines.push(`  tft.drawRGBBitmap(0, 0, (uint16_t*)${cleanName}, DISPLAY_WIDTH, DISPLAY_HEIGHT);`);
         lines.push('}');
         lines.push('');
         lines.push('void loop() {');
@@ -360,9 +410,15 @@ const CodeGenerator = {
         lines.push('');
         lines.push('  if (millis() - lastTime >= frameInterval) {');
         lines.push('    lastTime = millis();');
-        lines.push(`    tft.drawRGBBitmap(0, 0, ${cleanName}_allArray[currentFrame], DISPLAY_WIDTH, DISPLAY_HEIGHT);`);
+        lines.push('#if defined(__AVR__)');
+        lines.push(`    const uint16_t* framePtr = (const uint16_t*)pgm_read_ptr(&(${cleanName}_allArray[currentFrame]));`);
+        lines.push('#else');
+        lines.push(`    const uint16_t* framePtr = ${cleanName}_allArray[currentFrame];`);
+        lines.push('#endif');
+        lines.push(`    tft.drawRGBBitmap(0, 0, (uint16_t*)framePtr, DISPLAY_WIDTH, DISPLAY_HEIGHT);`);
         lines.push(`    currentFrame = (currentFrame + 1) % ${frameCount};`);
         lines.push('  }');
+        lines.push('  delay(1); // Yield for Watchdog and background tasks (prevents ESP32/ESP8266 WDT panic)');
         lines.push('}');
       }
     }

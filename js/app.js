@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const codeOutput = $('codeOutput');
   const codeLinesCount = $('codeLinesCount');
   const btnCopyCode = $('btnCopyCode');
+  const btnMediaCopyCode = $('btnMediaCopyCode');
+  const btnCopyVideoCode = $('btnCopyVideoCode');
+  const btnCopyActiveFrame = $('btnCopyActiveFrame');
   const btnDownloadCurrent = $('btnDownloadCurrent');
   const btnDownloadZip = $('btnDownloadZip');
 
@@ -917,18 +920,87 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  function copyTextToClipboard(text, successMsg = 'Code copied to clipboard!') {
+    if (!text) {
+      toast('No code generated yet. Please load media first!');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast(successMsg);
+      }).catch(() => {
+        fallbackCopy(text, successMsg);
+      });
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+
+  function fallbackCopy(text, successMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast(successMsg);
+    } catch (e) {
+      toast('Failed to copy code.');
+    }
+    document.body.removeChild(ta);
+  }
+
   // Action Buttons
   btnCopyCode.addEventListener('click', () => {
-    const code = codeOutput.value;
-    if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      toast('Code copied to clipboard!');
-    }).catch(() => {
-      codeOutput.select();
-      document.execCommand('copy');
-      toast('Code copied to clipboard!');
-    });
+    const viewName = state.currentOutputView === 'header' ? 'image_data.h' : state.currentOutputView === 'sketch' ? 'sketch.ino' : 'diagram.json';
+    copyTextToClipboard(codeOutput.value, `${viewName} copied to clipboard!`);
   });
+
+  if (btnMediaCopyCode) {
+    btnMediaCopyCode.addEventListener('click', () => {
+      copyTextToClipboard(codeOutput.value, 'Code copied to clipboard!');
+    });
+  }
+
+  if (btnCopyVideoCode) {
+    btnCopyVideoCode.addEventListener('click', () => {
+      if (state.processedFramesData.length === 0) {
+        toast('Please extract or load video frames first!');
+        return;
+      }
+      const targetCode = state.currentOutputView === 'header' ? state.generatedCode.header : (state.generatedCode[state.currentOutputView] || state.generatedCode.header);
+      copyTextToClipboard(targetCode, `Video animation code (${state.processedFramesData.length} frames) copied!`);
+    });
+  }
+
+  if (btnCopyActiveFrame) {
+    btnCopyActiveFrame.addEventListener('click', () => {
+      if (state.processedFramesData.length === 0 || !state.processedFramesData[state.activeFrameIndex]) {
+        toast('No frame available to copy!');
+        return;
+      }
+      const w = parseInt(targetWidth.value, 10) || 128;
+      const h = parseInt(targetHeight.value, 10) || 64;
+      const config = {
+        varName: `${arrayVarName.value || 'display_data'}_f${state.activeFrameIndex + 1}`,
+        width: w,
+        height: h,
+        colorFormat: colorFormat.value,
+        flashStorage: flashStorage.value,
+        displayType: displayType.value,
+        mcuBoard: mcuBoard.value,
+        graphicsLibrary: graphicsLibrary.value,
+        rotation: parseInt(rotationAngle.value, 10) || 0,
+        frameCount: 1,
+        fps: parseInt(videoFps.value, 10) || 10,
+        pins: state.pins
+      };
+      const singleFrameCode = CodeGenerator.generateHeaderFile([state.processedFramesData[state.activeFrameIndex]], config);
+      copyTextToClipboard(singleFrameCode, `Frame ${state.activeFrameIndex + 1} C-array copied to clipboard!`);
+    });
+  }
 
   btnDownloadCurrent.addEventListener('click', () => {
     const code = codeOutput.value;

@@ -45,6 +45,8 @@ const WokwiGenerator = {
       const cs = pins.cs !== undefined ? pins.cs : 5;
       const dc = pins.dc !== undefined ? pins.dc : 2;
       const rst = pins.rst !== undefined ? pins.rst : 4;
+      const mosi = pins.mosi !== undefined ? pins.mosi : 23;
+      const sck = pins.sck !== undefined ? pins.sck : 18;
 
       diagram = {
         version: 1,
@@ -63,8 +65,8 @@ const WokwiGenerator = {
           [ `esp:${cs}`, "tft:CS", "blue", [ "v0" ] ],
           [ `esp:${rst}`, "tft:RST", "orange", [ "v0" ] ],
           [ `esp:${dc}`, "tft:D/C", "green", [ "v0" ] ],
-          [ "esp:23", "tft:MOSI", "purple", [ "v0" ] ],
-          [ "esp:18", "tft:SCK", "white", [ "v0" ] ]
+          [ `esp:${mosi}`, "tft:MOSI", "purple", [ "v0" ] ],
+          [ `esp:${sck}`, "tft:SCK", "white", [ "v0" ] ]
         ]
       };
     } else if (!isESP32 && isOled) {

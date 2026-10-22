@@ -21,7 +21,8 @@ Additionally, Img2Display supports multi-frame video extraction, allowing develo
 - Configurable playback rate: 5, 8, 10, 15, and 20 frames per second (FPS).
 - Integrated timeline trimmer to specify custom start and end timestamps.
 - Frame timeline scrubber with interactive thumbnail reel for granular inspection.
-- Generates non-blocking animation loops utilizing hardware timers (`millis()`).
+- **1-Click Copy Code Options**: Quick buttons to copy full video animation code or the exact C-array of any single selected frame.
+- Generates non-blocking animation loops utilizing hardware timers (`millis()`) and background task yielding (`delay(1)`) to avoid ESP32 Watchdog Timer resets.
 
 ### 2. High-Fidelity Color and Monochrome Processing
 - **16-Bit RGB565 Engine**:
@@ -152,6 +153,12 @@ You can set it up in either of two easy ways:
 
 ### RGB565 Endianness
 `Adafruit_GFX::drawRGBBitmap` expects 16-bit words formatted with red in bits [15:11], green in bits [10:5], and blue in bits [4:0]. Byte-swapping must remain disabled when using this function to prevent channel inversion and color solarization artifacts.
+
+### TFT Video Animation Stability (Gotchas Resolved)
+- **Deleted Copy Constructor**: `Adafruit_SPITFT` deletes its copy constructor in modern C++ releases. All generated code uses direct constructor invocation (`Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);`) rather than copy-assignment.
+- **ESP32 Watchdog Timer (WDT) Yield**: Full-frame SPI rendering at high frame rates can monopolize the processor. A subtle `delay(1)` is inserted into `loop()` to let the FreeRTOS IDLE task reset the hardware watchdog, preventing continuous panic reboot loops.
+- **Pointer Casting**: In `Adafruit_SPITFT`, `drawRGBBitmap` requires `uint16_t*`. The generator explicitly casts frame pointers (`(uint16_t*)framePtr`) to guarantee warning-free and error-free compilation across all Arduino toolchains.
+- **ESP32 Partition Scheme**: When compiling large TFT animations with multiple frames in Arduino IDE, select **Tools &rarr; Partition Scheme &rarr; "Huge APP (3MB No OTA / 1MB SPIFFS)"** to ensure the program fits within flash memory.
 
 ---
 

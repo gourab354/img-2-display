@@ -99,6 +99,10 @@
               <div class="media-fname" id="mediaFname">filename.png</div>
               <div class="media-specs" id="mediaSpecs">0x0 px · Image</div>
             </div>
+            <button id="btnMediaCopyCode" class="btn btn-secondary btn-xs" title="Copy code for loaded media">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy Code
+            </button>
             <button id="btnClearMedia" class="btn-icon" title="Clear media">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -148,10 +152,16 @@
             </div>
           </div>
 
-          <button id="btnExtractFrames" class="btn btn-primary btn-block btn-sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-            Re-Extract Frames
-          </button>
+          <div class="video-actions-row">
+            <button id="btnExtractFrames" class="btn btn-primary btn-sm" style="flex: 1.1;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              Re-Extract
+            </button>
+            <button id="btnCopyVideoCode" class="btn btn-secondary btn-sm" style="flex: 1;" title="Copy complete video animation C code">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy Code
+            </button>
+          </div>
         </div>
 
         <!-- Target Hardware & Display Config -->
@@ -384,6 +394,10 @@
                 <button id="btnPrevFrame" class="btn-icon-sm" title="Previous frame">⏮</button>
                 <button id="btnPlayAnimation" class="btn-icon-sm" title="Play">▶</button>
                 <button id="btnNextFrame" class="btn-icon-sm" title="Next frame">⏭</button>
+                <button id="btnCopyActiveFrame" class="btn btn-secondary btn-xs" title="Copy C-array for current active frame">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  Copy Frame
+                </button>
               </div>
             </div>
             <input type="range" id="frameScrubber" min="0" max="0" value="0">
@@ -526,8 +540,11 @@
           <h4>Why did code fail in other converters? (Gotchas &amp; Fixes)</h4>
           <ul class="guide-list">
             <li><strong>Adafruit ST7789 requires <code>tft.init(width, height)</code></strong>, NOT <code>tft.begin()</code>. Calling <code>begin()</code> throws compiler error or black screen.</li>
-            <li><strong>Adafruit ST7735 requires <code>tft.initR(INITR_BLACKTAB)</code></strong>.</li>
+            <li><strong>Adafruit ST7735 requires <code>tft.initR(INITR_BLACKTAB)</code></strong> (or <code>INITR_144GREENTAB</code> for 1.44" 128x128).</li>
             <li><strong>Adafruit SSD1306 requires <code>display.begin(SSD1306_SWITCHCAPVCC, 0x3C)</code></strong> with Wire.</li>
+            <li><strong>Deleted Copy Constructor Fix</strong>: Older scripts wrote <code>Adafruit_ST7789 tft = Adafruit_ST7789(...)</code> which throws <code>use of deleted function</code> in newer C++ compilers because Adafruit_SPITFT deleted its copy constructor. Img2Display generates direct initialization: <code>Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_RST);</code>.</li>
+            <li><strong>ESP32 Watchdog Timer Reset during Video</strong>: Playing high-res TFT video animation pushed SPI continuously, starving background RTOS tasks and triggering <code>TG0WDT_SYS_RESET</code> bootloops. Img2Display inserts <code>delay(1);</code> in <code>loop()</code> to keep the system responsive.</li>
+            <li><strong>ESP32 Flash Partition Scheme for Video</strong>: If Arduino IDE throws <em>"Sketch too big"</em> for long video animations, select <strong>Tools &rarr; Partition Scheme &rarr; "Huge APP (3MB No OTA / 1MB SPIFFS)"</strong>.</li>
             <li><strong>RGB565 Endianness (Byte Swap)</strong>: In Adafruit_GFX / Wokwi, <code>drawRGBBitmap()</code> expects natural byte order. If "Swap Byte Order" is enabled, bytes get inverted causing crazy rainbow/solarized colors. <strong>Keep "Swap Byte Order" unchecked for Adafruit_GFX and Wokwi!</strong></li>
             <li><strong>MISO Pin Function</strong>: <code>MISO</code> (Master In, Slave Out) is only for reading data from display back to ESP32 (e.g. reading touch screen or SD card). It is <strong>never used</strong> for drawing images. Quality is determined entirely by resolution and RGB565 dithering.</li>
             <li><strong>RGB vs BGR Panels</strong>: If red and blue colors are swapped on your physical screen, switch the <em>Color Channel Order</em> dropdown to <strong>BGR</strong>.</li>
